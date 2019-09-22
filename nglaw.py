@@ -171,7 +171,8 @@ def process_court(court2, court3, rite_sheet):
 				summary_col.append('n')
 			else: 
 				num = i + 2
-				print(str(num)+": " + court)
+				#print("About the summary trial or not")
+				#print(str(num)+": " + court)
 				summary_col.append('n/a')
 
 		#public or not 
@@ -396,7 +397,12 @@ def process_court2(court2, write_sheet):
 		#plantiff reason 
 		#诉称
 		sets = line.split("诉称", 1)
-		second = sets[1]
+		second = None 
+		if len(sets) >= 2: 
+			second = sets[1]
+		else: 
+			
+			print("NO YUANGAO: "+line)
 		second = second[1:] #remove the first comma and others in rare cases 
 
 		'''if num == 5: 
@@ -412,12 +418,12 @@ def process_court2(court2, write_sheet):
 		#whether it agrees to divorce	
 		
 		#there might be the case that the above are in front of the 被告
-		prove = re.search(r'经审理查明|经庭审查明|本院确认如下事实|对本案事实..如下|根据当事人举证质证，对本案事实认定如下|确认以下事实', second)
+		prove = re.search(r'审理查明|经审理查明|经庭审查明|本院确认如下事实|对本案事实..如下|根据当事人举证质证，对本案事实认定如下|确认以下事实', second)
 		if prove: 
 			#remove the last part 
 			rest = second[:prove.start()]
 			#contains the YuanGao, Beigao argument 
-			sep1 = re.search(r'被告([\u4e00-\u9fa5]*)没有到庭|被告([\u4e00-\u9fa5]*)(×|\d)*辩称|被告([\u4e00-\u9fa5]*)答辩|被告([\u4e00-\u9fa5]*)未到庭|被告([\u4e00-\u9fa5]*)，*未到庭|被告([\u4e00-\u9fa5]*)，*未有答辩|被告([\u4e00-\u9fa5]*)辩称|被告([\u4e00-\u9fa5]*)，*无书面|被告([\u4e00-\u9fa5]*)，*未提交书面|被告[\u4e00-\u9fa5]*，[\u4e00-\u9fa5]*未向本院[\u4e00-\u9fa5]*|([\u4e00-\u9fa5]*)未向本院([\u4e00-\u9fa5]*)', rest)
+			sep1 = re.search(r'被告([\u4e00-\u9fa5]*)对原告主张|被告([\u4e00-\u9fa5]*)没有到庭|被告([\u4e00-\u9fa5]*)(×|\d)*辩称|被告([\u4e00-\u9fa5]*)答辩|被告([\u4e00-\u9fa5]*)未到庭|被告([\u4e00-\u9fa5]*)，*未到庭|被告([\u4e00-\u9fa5]*)，*未有答辩|被告([\u4e00-\u9fa5]*)辩称|被告([\u4e00-\u9fa5]*)，*无书面|被告([\u4e00-\u9fa5]*)，*未提交书面|被告[\u4e00-\u9fa5]*，[\u4e00-\u9fa5]*未向本院[\u4e00-\u9fa5]*|([\u4e00-\u9fa5]*)未向本院([\u4e00-\u9fa5]*)', rest)
 			yuan = None 
 
 			if sep1:
@@ -716,7 +722,7 @@ def compareToJufa(start, the_year, jufa, open_, final):
 				if re.search(r'某离婚|杨某甲离婚', r.value): 
 					result_col.append('y')
 				else:
-					print(r.value)
+					print("This is about ruling: " + r.value)
 					result_col.append('n/a')
 				custody_col.append('n/a')
 
@@ -786,23 +792,23 @@ if __name__ == '__main__':
 	write_sheet = write_to.add_sheet(u'sheet1', cell_overwrite_ok=True)
 	
 	#get the targeted file
-	target = xlrd.open_workbook("../Downloads/2014奉节open.xlsx")
+	target = xlrd.open_workbook("../../Downloads/2015奉节open.xlsx")
 	
 	read_(target, write_sheet) 
-	write_to.save("../Downloads/2014奉节after.xls")	
+	write_to.save("../../Downloads/2015奉节after.xls")	
 	
-	target1 = xlrd.open_workbook("../Downloads/2014奉节after.xls")
+	target1 = xlrd.open_workbook("../../Downloads/2015奉节after.xls")
 	open_sheet = target1.sheets()[0]
 	final = xlwt.Workbook()
 	final_sheet = final.add_sheet(u'final', cell_overwrite_ok=True)
 
 	#adjust to the Jufa cases 
-	jufa = xlrd.open_workbook("../Downloads/2014奉节.xlsx")
+	jufa = xlrd.open_workbook("../../Downloads/2015奉节.xlsx")
 	jufa_sheet = jufa.sheets()[0] 
 
 	year = 2015
-	start = 596
+	start = 694
 	jufa_not, open_not = compareToJufa(start, year, jufa_sheet, open_sheet, final_sheet)
 
-	final.save("../Downloads/2014奉节comp3.xls")	
+	final.save("../../Downloads/2015奉节comp.xls")	
 
