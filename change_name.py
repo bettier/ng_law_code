@@ -44,8 +44,8 @@ def excel_order(start, path):
 
 if __name__ == '__main__':
 	downloads = "../../Downloads/"
-	targets = ["2015奉节", "奉节2"]
-	start_num = 694
+	targets = ["2015丰都"]
+	start_num = 1286
 	start = len(os.listdir(downloads+targets[0])) + 1 
 	target_path = downloads+targets[0]+"/"
 	count = 1
