@@ -76,7 +76,13 @@ def process_danshiren(dangshiren, write_sheet):
 		#cleaninng the data
 		str_ = str_.replace('、', '')
 		#separate 被告和原告
-		two = str_.split('被告') 
+		two = str_.split('被告')
+		if len(two) < 2: 
+			print(str_) 
+			print(i)
+			print("HELLO")
+			#print(len(dangshiren))
+			#print(dangshiren)
 		yuanGao = two[0]
 		beiGao = '被告' + two[1]
 		#find the gender of the Yuangao and Beigao
@@ -428,6 +434,8 @@ def process_court2(court2, write_sheet):
 			if len(sets2) >= 2: 
 				second = sets2[1]
 			else: 
+				#print(i+1)
+				#print(court2[i])
 				print("NO YUANGAO: "+line)
 		second = second[1:] #remove the first comma and others in rare cases 
 
@@ -444,13 +452,13 @@ def process_court2(court2, write_sheet):
 		#whether it agrees to divorce	
 		
 		#there might be the case that the above are in front of the 被告
-		prove = re.search(r'本案诉讼中，|确认如下事实|本院[\u4e00-\u9fa5]*事实|原告罗某某与被告谭某甲|本院[\u4e00-\u9fa5]*确认如下[\u4e00-\u9fa5]*事实|本院确认以下|本院认定以下|本案确认以下|本案确认|本案如下法律事实|本院确认事实如下|经审核认定|经庭审审核|审理查明|经审理查明|经庭审查明|本院确认如下事实|对本案事实..如下|根据当事人举证质证，对本案事实认定如下|确认以下事实', second)
+		prove = re.search(r'现查明以下事实|将法律事实确认如下|本案诉讼中，|确认如下事实|本院[\u4e00-\u9fa5]*事实|原告罗某某与被告谭某甲|本院[\u4e00-\u9fa5]*确认如下[\u4e00-\u9fa5]*事实|本院确认以下|本院认定以下|本案确认以下|本案确认|本案如下法律事实|本院确认事实如下|经审核认定|经庭审审核|审理查明|经审理查明|经庭审查明|本院确认如下事实|对本案事实..如下|根据当事人举证质证，对本案事实认定如下|确认以下事实', second)
 		if prove: 
 			#remove the last part 
 			rest = second[:prove.start()]
 			#contains the YuanGao, Beigao argument 
-			sep1 = re.search(r'被告辨称|辩称:|被告梁X全辩称|被告([\u4e00-\u9fa5]*)诉称|被告([\u4e00-\u9fa5]*)未应诉答辨|被告.*拒不到庭参加诉讼|未到庭|被告([\u4e00-\u9fa5]*)对原告主张|被告([\u4e00-\u9fa5]*)没有到庭|被告([\u4e00-\u9fa5]*)(×|\d)*辩称|被告([\u4e00-\u9fa5]*)答辩|被告([\u4e00-\u9fa5]*)未到庭|被告([\u4e00-\u9fa5]*)，*未到庭|被告([\u4e00-\u9fa5]*)，*未有答辩|被告([\u4e00-\u9fa5]*)辩称|被告([\u4e00-\u9fa5]*)，*无书面|被告([\u4e00-\u9fa5]*)，*未提交书面|被告[\u4e00-\u9fa5]*，[\u4e00-\u9fa5]*未向本院[\u4e00-\u9fa5]*|([\u4e00-\u9fa5]*)未向本院([\u4e00-\u9fa5]*)', rest)
-			yuan = None 
+			sep1 = re.search(r'被告江1书面辩称|被告([\u4e00-\u9fa5]*)辨称|被告([\u4e00-\u9fa5]*)未到|被告([\u4e00-\u9fa5]*)未出庭|被告辨称|辩称:|被告梁X全辩称|被告([\u4e00-\u9fa5]*)诉称|被告([\u4e00-\u9fa5]*)未应诉答辨|被告.*拒不到庭参加诉讼|未到庭|被告([\u4e00-\u9fa5]*)对原告主张|被告([\u4e00-\u9fa5]*)没有到庭|被告([\u4e00-\u9fa5]*)(×|\d)*辩称|被告([\u4e00-\u9fa5]*)答辩|被告([\u4e00-\u9fa5]*)未到庭|被告([\u4e00-\u9fa5]*)，*未到庭|被告([\u4e00-\u9fa5]*)，*未有答辩|被告([\u4e00-\u9fa5]*)辩称|被告([\u4e00-\u9fa5]*)，*无书面|被告([\u4e00-\u9fa5]*)，*未提交书面|被告[\u4e00-\u9fa5]*，[\u4e00-\u9fa5]*未向本院[\u4e00-\u9fa5]*|([\u4e00-\u9fa5]*)未向本院([\u4e00-\u9fa5]*)', rest)
+			yuan = ""
 
 			if sep1:
 				yuan = rest[:sep1.start()]
@@ -505,6 +513,7 @@ def process_court2(court2, write_sheet):
 			else: 
 				print(str(num)+": DID NOT FOUND 被告ARGUMENT")
 				print(rest)
+				yuan=rest
 				plantiff_reasons.append("N/A")
 				defendant_agree.append('n/a')
 				defendant_reasons.append("n/a")
@@ -531,6 +540,8 @@ def process_court2(court2, write_sheet):
 				write_sheet.write(num,31, prove_[evi.start():])	
 			else: 
 				#print(str(num)+": "+prove_)
+				#print("test on how many")
+				#print(yuan)
 				sss = re.search(r'下列证据|原告([\u4e00-\u9fa5])*为证明自己的主张|原告([\u4e00-\u9fa5])*(为)*证明', yuan)
 				if sss: 
 					write_sheet.write(num, 31, yuan[sss.start():])
@@ -837,23 +848,23 @@ if __name__ == '__main__':
 	write_sheet = write_to.add_sheet(u'sheet1', cell_overwrite_ok=True)
 	
 	#get the targeted file
-	target = xlrd.open_workbook("../openlaws/2015丰都open.xlsx")
+	target = xlrd.open_workbook("../openlaws/2014巫山open.xlsx")
 	
 	read_(target, write_sheet) 
-	write_to.save("../2015丰都after.xls")	
+	write_to.save("../2014巫山after.xls")	
 	
-	target1 = xlrd.open_workbook("../2015丰都after.xls")
+	target1 = xlrd.open_workbook("../2014巫山after.xls")
 	open_sheet = target1.sheets()[0]
 	final = xlwt.Workbook()
-	final_sheet = final.add_sheet(u'final', cell_overwrite_ok=True)
+	final_sheet = final.add_sheet(u'2014巫山', cell_overwrite_ok=True)
 
 	#adjust to the Jufa cases 
-	jufa = xlrd.open_workbook("../../Downloads/2015丰都.xlsx")
+	jufa = xlrd.open_workbook("../../Downloads/2014巫山.xlsx")
 	jufa_sheet = jufa.sheets()[0] 
 
-	year = 2015
-	start = 1286
+	year = 2014
+	start = 747
 	jufa_not, open_not = compareToJufa(start, year, jufa_sheet, open_sheet, final_sheet)
 
-	final.save("../2015丰都comp.xls")	
+	final.save("../2014巫山comp.xls")	
 
