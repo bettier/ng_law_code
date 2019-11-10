@@ -1,11 +1,10 @@
-import xlrd #read 
-import xlwt #write 
+import xlrd 
+import xlwt 
 import xlsxwriter
 import os 
 import re #regularization
 
-
-#TODO: group process many excels at the same time in the director 
+#read the sheet from openLaws 
 def read_(target, write_sheet):
 	sheets = target.sheets()
 
@@ -30,14 +29,14 @@ def read_(target, write_sheet):
 				case_nums = sheet.col_values(i, start_rowx=1, end_rowx=nrows)
 				write_sheet.write(0, 3,"case num")
 				write_col(case_nums, 3, write_sheet)
-			elif title == '当事人': 
+			elif title == '当事人': #@06-11 
 				dangshiren = sheet.col_values(i, start_rowx=1, end_rowx=nrows)
 				process_danshiren(dangshiren, write_sheet)
-			elif title == '庭审程序说明': 
+			elif title == '庭审程序说明': #@12-13
 				court = sheet.col_values(i, start_rowx=1, end_rowx=nrows)
 				court3 = sheet.col_values(21, start_rowx=1, end_rowx=nrows)
 				process_court(court, court3, write_sheet)
-			elif title == '庭审过程':
+			elif title == '庭审过程': 
 				#print("THIS IS the======", i)
 				court2 = sheet.col_values(i, start_rowx=1, end_rowx=nrows)
 				process_court2(court2, write_sheet)
@@ -64,6 +63,8 @@ def write_col_highlight(col, highlight, color, colN, write_sheet):
 		else: 
 			write_sheet.write(i+1, colN, col[i])
 
+#process the dangshi ren informatin 
+#petition gender 
 def process_danshiren(dangshiren, write_sheet):
 	yuanGao_gender = []
 	beiGao_gender = []
@@ -73,18 +74,26 @@ def process_danshiren(dangshiren, write_sheet):
 	beiGao_legal = []
 	for i in range(0, len(dangshiren)): 
 		str_ = dangshiren[i]
-		#cleaninng the data
 		str_ = str_.replace('、', '')
-		#separate 被告和原告
+
+		#check if it is empty 
+		if str_ == "":
+			yuanGao_gender.append("n/a")
+			beiGao_gender.append("n/a")
+			yuanGao_DOB.append("n/a")
+			beiGao_DOB.append("n/a")
+			yuanGao_legal.append("n/a")
+			beiGao_legal.append("n/a")
+			continue  
+
+		#found the Beigao 
 		two = str_.split('被告')
-		if len(two) < 2: 
-			print(str_) 
-			print(i)
-			print("HELLO")
-			#print(len(dangshiren))
-			#print(dangshiren)
+		if len(two) < 2: 	
+			print("DID NOT FOUND 被告 in DANGSHIREN!!!!")
+			
 		yuanGao = two[0]
 		beiGao = '被告' + two[1]
+		
 		#find the gender of the Yuangao and Beigao
 		match = re.search("女|男", yuanGao)
 		if match: 
@@ -172,11 +181,11 @@ def process_court(court2, court3, rite_sheet):
 		if summary: 
 			summary_col.append('y')
 		else: 
-			not_sum = re.search('合议庭|和议庭|审判员陈建平于2014年2月25日', court)
+			not_sum = re.search('合议庭|和议庭', court)
 			if not_sum: 
 				summary_col.append('n')
 			else: 
-				num = i + 2
+				#num = i + 2
 				#print("About the summary trial or not")
 				#print(str(num)+": " + court)
 				summary_col.append('n/a')
@@ -197,22 +206,18 @@ def process_court(court2, court3, rite_sheet):
 	write_sheet.write(0,13,"publicOrNot")
 	write_col(public_col, 13, write_sheet)	
 
-def process_prove(prove, write_sheet):
+#process the 审理 to decide the year and remarry part 
+def prove_year_remarry(prove):
 	year_return = 0 
 	remarried_return = None 
 	highlight = None 
 
-	marriage = re.search(r'结婚', prove)
-
+	marriage = re.search(r'结婚|登记', prove)
 	if marriage: 
 		the_ = re.split("，", prove)
-		#print(the_)
 		for index, t in enumerate(the_): 
-			#print(index)
-			year_ = re.search(r'结婚', t) 
-			#print(t)
+			year_ = re.search(r'结婚|登记', t) 
 			if year_:
-				#print("HELLLLLO, "+t)
 				mar_year = re.search(r'[0-9][0-9][0-9][0-9]', t)
 				if mar_year: 
 					year_return = t[mar_year.start():mar_year.end()]
@@ -221,22 +226,24 @@ def process_prove(prove, write_sheet):
 					#同年结婚
 					tong = re.search(r'同年.*结婚', t)
 					if tong: 
-						f0 = index-1 
+						'''f0 = index-1 
 						f1 = True
 						y_ = 0
 						while(f1): 
 							if f0 >= 0 and f0 < len(the_): 
-								b = re.search(r'[0-9][0-9][0-9][0-9]年(.*(相识|同居|恋爱|建立关系|认识))*', the_[f0])
-								if b: 
-									y_ = re.findall(r'[0-9][0-9][0-9][0-9]', the_[f0])[0]
+								#b = re.search(r'[0-9][0-9][0-9][0-9]年(.*(相识|同居|恋爱|建立关系|认识))*', the_[f0])
+								#if b: 
+								the_y = re.findall(r'[0-9][0-9][0-9][0-9]', the_[f0])
+								if the_y: 
+									y_ = the_y[-1]
 									y_ = int(y_)
 									f1 = False 
 								else:
 									f0 = f0 -1 
 							else: 
 								f1 = False  
-						year_return = y_
-					else: 
+						year_return = y_'''
+					 
 						t_s = index 
 						while(t_s >= 1): 
 							new_t=the_[t_s-1]
@@ -251,38 +258,23 @@ def process_prove(prove, write_sheet):
 				break 
 	else:
 		year_return = 0
-	#print(year_return)
-	#print(prove)
-	#if year_return == 0: 
-		#print(prove)	
 
-	#print("ToFInd: ", year_return)
-
-		#decide whether it is remarried or not 
+	#decide whether it is remarried or not 
 	remarried = re.search(r'再婚', prove)
 	if remarried:
 		remarried_return = 'y'
 	else: 
 		remarried_return = 'n'
 
-	found = re.search(r"家庭暴力|家暴|纠纷|打骂|争执|打闹|致伤|损伤|吵闹", prove)
-	if found: 
-		highlight = True 
-	else: 
-		highlight = False 
-	#separate the sentences 
-	sentences = re.split('。', prove)
+	return year_return, remarried_return
+
+def prove_petition(prove):
+	
 	sum_petition = 0
 	str_petition = "("
 	str_second = ""
 
-	sum_female = 0 
-	sum_male = 0
-
-	year_list = []
-	str_year = ""
-	str_gender = ""	 
-	
+	sentences = re.split('。', prove)
 	for s in sentences: 
 		#find the first petition, #fine the second petition 
 		petition = re.findall(r'撤诉|撤回', s)
@@ -300,40 +292,7 @@ def process_prove(prove, write_sheet):
 				str_petition = str_petition+str(years[-1][0:4])+","
 			str_petition = str_petition + "no divorce."
 			sum_petition = sum_petition + 1 
-		
-		comma = re.split("，",s)
-		
-		for c in comma: 
-			#find the number of children 
-			girls = re.findall(r'一女|生育长女|次女|生育女', c)
-			boys = re.findall(r'一子|生育长子|次子|生育([\u4e00-\u9fa5]*)儿|生育男', c)
-			#if(len(boys)!=0):
-			#	print(c)
-			#	print(boys)
-			sum_female = sum_female+len(girls)
-			sum_male = sum_male+len(boys)
-		
-			if len(girls) != 0 or len(boys) != 0:
-				#new_s = re.search('结婚|登记', s)
-				#ss = None
-				#if new_s: 
-				#	ss = s[new_s.end():]
-				#else: 
-				#	ss = s
-				years = re.findall(r'[0-9][0-9][0-9][0-9]年', c)
-		#if len(years) != 0:
-		#		year_list.append(int(str(years[-1][0:4])))
-		#	sum_female = sum_female + 1
-				for y in years: 
-					year_list.append(int(str(y[0:4])))
 
-		#for b in boys: 
-		#	years = re.findall(r'[0-9][0-9][0-9][0-9]年', s)
-		#	if len(years) != 0:
-		#		year_list.append(int(str(years[-1][0:4])))
-		#	sum_male = sum_male + 1 
-
-	#outside of the for loop 		
 	str_petition = str_petition + ")"
 	if sum_petition == 0: 
 		str_petition = "y"
@@ -342,6 +301,30 @@ def process_prove(prove, write_sheet):
 		str_petition = "n"+str_petition
 		str_second = "y"
 
+	return str_petition, str_second 
+
+def prove_children(prove):
+	sum_female = 0 
+	sum_male = 0
+	year_list = []
+	str_year = ""
+	str_gender = ""	 
+	
+	sentences = re.split('。', prove)
+	for s in sentences: 
+		comma = re.split("，",s)
+		
+		for c in comma: 
+			#find the number of children 
+			girls = re.findall(r'一女|生育长女|次女|生育女', c)
+			boys = re.findall(r'一子|生育长子|次子|生育([\u4e00-\u9fa5]*)儿|生育男', c)
+			sum_female = sum_female+len(girls)
+			sum_male = sum_male+len(boys)
+		
+			if len(girls) != 0 or len(boys) != 0:
+				years = re.findall(r'[0-9][0-9][0-9][0-9]年', c)
+				for y in years: 
+					year_list.append(int(str(y[0:4])))
 	#process the chlidren problems 
 	year_list.sort()
 	for y in year_list:
@@ -351,43 +334,80 @@ def process_prove(prove, write_sheet):
 	else: 
 		str_year = str_year[:len(str_year)-1]
 		str_year = str_year+"."
-	#if len(year_list)>=3: 
-	#	print(prove)
 
-	#print(str(sum_female)+", "+str(sum_male))
 	if sum_female != 0: 
 		str_gender = str(sum_female)+" female,"
-		#print("There is female")
 	if sum_male != 0:
-		#print("WHY NOT")
 		str_gender = str_gender + str(sum_male)+" male."
 	
 	total = sum_female+sum_male
 	if total == 0: 
 		str_gender = "n/a"
-	#print(str(total)+", "+str_year+", "+str_gender)
-	return year_return, remarried_return, str_petition, str_second, total,str_year, str_gender, highlight 
 
-#both parties @14 
-#plantiff reasons @22
+	return total, str_year, str_gender
+
+def yuanGao_reason(rest): 
+	#find the yuan Gao 
+	sep1 = re.search(r'被告([\u4e00-\u9fa5]*)未举示证据|辩称|被告([\u4e00-\u9fa5]*)辨称|被告([\u4e00-\u9fa5]*)(X)*([\u4e00-\u9fa5]*)辩称|被告([\u4e00-\u9fa5]*)未到|被告([\u4e00-\u9fa5]*)未出庭|被告辨称|辩称:|被告梁X全辩称|被告([\u4e00-\u9fa5]*)诉称|被告([\u4e00-\u9fa5]*)未应诉答辨|被告.*拒不到庭参加诉讼|未到庭|被告([\u4e00-\u9fa5]*)对原告主张|被告([\u4e00-\u9fa5]*)没有到庭|被告([\u4e00-\u9fa5]*)(×|\d)*辩称|被告([\u4e00-\u9fa5]*)答辩|被告([\u4e00-\u9fa5]*)未到庭|被告([\u4e00-\u9fa5]*)，*未到庭|被告([\u4e00-\u9fa5]*)，*未有答辩|被告([\u4e00-\u9fa5]*)辩称|被告([\u4e00-\u9fa5]*)，*无书面|被告([\u4e00-\u9fa5]*)，*未提交书面|被告[\u4e00-\u9fa5]*，[\u4e00-\u9fa5]*未向本院[\u4e00-\u9fa5]*|([\u4e00-\u9fa5]*)未向本院([\u4e00-\u9fa5]*)', rest)
+	yuan = ""
+	bei = ""
+	if sep1:
+		yuan = rest[:sep1.start()]
+		bei = rest[sep1.start():]
+		#delete evidence part from the yuangao 
+		eviYuan = re.search("原告为证实其主张|原告为证明|向法庭提交|在本院开庭", yuan)
+		if eviYuan: 
+			yuan = yuan[:eviYuan.start()]
+			bei = rest[eviYuan.end():]
+
+		#process the beigao 
+		dele = re.search(r'本院[\u4e00-\u9fa5]*，认证如下|原告为证实其主张|原告为证明|向法庭提交|在本院开庭', bei)
+		if dele:
+			bei = bei[:dele.start()]
+	else: 
+		print("DID NOT FOUND 被告")
+		print(rest)
+	return yuan, bei 
+
+#decude whether it is disputed or not 
+def defendant_dispute_op(bei, ab): 
+	#if bei is empty or absent 
+	return_ = ["",""]
+	if bei=="" or ab: 
+		return "n/a","n/a"
+	dispute = re.search(r'没[\u4e00-\u9fa5]*家[\u4e00-\u9fa5]*暴|无[\u4e00-\u9fa5]*家[\u4e00-\u9fa5]*暴|家[\u4e00-\u9fa5]*暴[\u4e00-\u9fa5]*不是', bei)
+	if dispute: 
+		return_[0] = "y"
+	else: 
+		return_[0] = "n"
+
+	opt = re.search(r'不同意([\u4e00-\u9fa5]*)离婚', bei)
+	if opt: 
+		return_[1] = 'n'
+	elif re.search(r'同意([\u4e00-\u9fa5]*)离婚', bei):
+		return_[1] = 'y'
+	else: 
+		return_[1] = 'n/a'
+
+	return return_[0],return_[1]
+
 def process_court2(court2, write_sheet): 
 	both_col = []
-	num = 2
-	plantiff_reasons = []
-	defendant_reasons = []
-	proven = []
-	defendant_agree = []
-	year_list = []
-	remarried_list = []
-
-	first_l = []
-	second_l = []
-	total_child_l = []
-	child_year_l = []
-	child_gender_l = []
-	highlight_l = []
-
+	
+	yuan_l = []
+	bei_l =[]
 	dispute_l = []
+	opt_l = []
+
+	year_l = [] 
+	remarry_l = []
+	str_petition_l = [] 
+	str_second_l = []
+	total_l = [] 
+	str_year_l = []
+	str_gender_l = [] 
+
+	prove_l = []
 
 	pattern1 = xlwt.Pattern() 
 	pattern1.pattern = xlwt.Pattern.SOLID_PATTERN
@@ -396,130 +416,86 @@ def process_court2(court2, write_sheet):
 	style1.pattern = pattern1 
 
 	for i in range(0, len(court2)): 
-		
+		num = i + 1 
+		#if the line is empty 
 		line = court2[i]
+		if line == "": 
+			both_col.append("")
+			yuan_l.append("")
+			bei_l.append("")
+			dispute_l.append("")
+			opt_l.append("")
+			year_l.append("")
+			remarry_l.append("")
+			str_petition_l.append("")
+			str_second_l.append("")
+			total_l.append("")
+			str_year_l.append("")
+			str_gender_l.append("")
+			continue 
 		#remove the 。、and replace it with 。
 		line = line.replace('。、', '。')
 		line = line.replace('。；', '。')
-
 		#find if the defendant is present 
-		absence = re.search("依法缺席", line)
+		absence = re.search("依法缺席|未到庭|缺席|拒不到庭", line)
 		if absence: 
-			#to decide which one is present and which one is not 
-			present = re.search(r"到庭参加([\u4e00-\u9fa5]*)诉讼", line)
-			
-			if present: 
-				pre_line = line[:present.start()]
-				yuanG = re.search("原告", pre_line)
-			else: 
-				print("FOUND THE PROBLEM for both attendant")
-				#print(i+1, line)
-			if yuanG: 
-				#print("MISS DEFENDANT")
-				both_col.append("n(miss defendant)")
-			elif re.search("被告", pre_line): 
-				both_col.append("n(miss plantiff)")
+			both_col.append("n(miss plantiff)")
 		else: 
-			#print(line)
 			both_col.append('y')
 
 		#plantiff reason 
-		#诉称
 		sets = line.split("诉称", 1)
 		second = None 
 		if len(sets) >= 2: 
 			second = sets[1]
 		else: 
-			sets2 = re.split("原告[\u4e00-\u9fa5]*称", line)
+			sets2 = re.split("原告[\u4e00-\u9fa5]*称|原告[\u4e00-\u9fa5]*诉请", line)
 			if len(sets2) >= 2: 
 				second = sets2[1]
 			else: 
-				#print(i+1)
-				#print(court2[i])
 				print("NO YUANGAO: "+line)
-		second = second[1:] #remove the first comma and others in rare cases 
-
-		'''if num == 5: 
-			try_ = re.search(r'被告([\u4e00-\u9fa5]*)，([\u4e00-\u9fa5]*)未向本院([\u4e00-\u9fa5]*)', second)
-			if try_: 
-				print("find")
-				bei = second[try_.start():try_.end()]
-				print(str(num)+": "+bei)
-			else: 
-				print("OH NO")'''
-		#1. 被告xxx辩称
-		#2. 被告xxx未提交书面答辩状。
-		#whether it agrees to divorce	
+				both_col.append("")
+				yuan_l.append("")
+				bei_l.append("")
+				dispute_l.append("")
+				opt_l.append("")
+				year_l.append("")
+				remarry_l.append("")
+				str_petition_l.append("")
+				str_second_l.append("")
+				total_l.append("")
+				str_year_l.append("")
+				str_gender_l.append("")
+				continue 
+		second = second[1:] 
 		
 		#there might be the case that the above are in front of the 被告
 		prove = re.search(r'现查明以下事实|将法律事实确认如下|本案诉讼中，|确认如下事实|本院[\u4e00-\u9fa5]*事实|原告罗某某与被告谭某甲|本院[\u4e00-\u9fa5]*确认如下[\u4e00-\u9fa5]*事实|本院确认以下|本院认定以下|本案确认以下|本案确认|本案如下法律事实|本院确认事实如下|经审核认定|经庭审审核|审理查明|经审理查明|经庭审查明|本院确认如下事实|对本案事实..如下|根据当事人举证质证，对本案事实认定如下|确认以下事实', second)
 		if prove: 
-			#remove the last part 
+			#remove the last part if prove exists  
 			rest = second[:prove.start()]
-			#contains the YuanGao, Beigao argument 
-			sep1 = re.search(r'被告江1书面辩称|被告([\u4e00-\u9fa5]*)辨称|被告([\u4e00-\u9fa5]*)未到|被告([\u4e00-\u9fa5]*)未出庭|被告辨称|辩称:|被告梁X全辩称|被告([\u4e00-\u9fa5]*)诉称|被告([\u4e00-\u9fa5]*)未应诉答辨|被告.*拒不到庭参加诉讼|未到庭|被告([\u4e00-\u9fa5]*)对原告主张|被告([\u4e00-\u9fa5]*)没有到庭|被告([\u4e00-\u9fa5]*)(×|\d)*辩称|被告([\u4e00-\u9fa5]*)答辩|被告([\u4e00-\u9fa5]*)未到庭|被告([\u4e00-\u9fa5]*)，*未到庭|被告([\u4e00-\u9fa5]*)，*未有答辩|被告([\u4e00-\u9fa5]*)辩称|被告([\u4e00-\u9fa5]*)，*无书面|被告([\u4e00-\u9fa5]*)，*未提交书面|被告[\u4e00-\u9fa5]*，[\u4e00-\u9fa5]*未向本院[\u4e00-\u9fa5]*|([\u4e00-\u9fa5]*)未向本院([\u4e00-\u9fa5]*)', rest)
-			yuan = ""
+		else: 
+			rest = second 
 
-			if sep1:
-				yuan = rest[:sep1.start()]
-				#cut the defendant reasons
-				dele = re.search(r'本院[\u4e00-\u9fa5]*，认证如下', rest)
-				bei = None 
-				if dele:
-					bei = rest[sep1.start():dele.start()]
-				else: 
-					bei = rest[sep1.start():]
-				plantiff_reasons.append(yuan)
-				defendant_reasons.append(bei)
+		yuan, bei = yuanGao_reason(rest)
+		dispute, opt = defendant_dispute_op(bei, absence)
 
-				#decude whether it is disputed or not 
-				dispute = re.search(r'没[\u4e00-\u9fa5]*家[\u4e00-\u9fa5]*暴|无[\u4e00-\u9fa5]*家[\u4e00-\u9fa5]*暴|家[\u4e00-\u9fa5]*暴[\u4e00-\u9fa5]*不是', bei)
-				if dispute: 
-					dispute_l.append("y")
-				elif absence: 
-					dispute_l.append("n/a")
-				else: 
-					dispute_l.append("n")
+		yuan_l.append(yuan)
+		bei_l.append(bei)
+		dispute_l.append(dispute)
+		opt_l.append(opt)
 
-				
+		#if there is prove, separate the evidences from itself 
+		year=0
+		remarry="n"
+		str_petition="y" 
+		str_second="n" 
+		total=0 
+		str_year="" 
+		str_gender="" 
+		highlight=False
 
-			#print(str(num)+": "+yuan)
-			#print(str(num)+": "+bei)
-
-
-			#if prove: 
-			#	bei_full = rest[:prove.start()]
-			#	clarify = rest[prove.start():]
-			#	defendant_reasons.append(bei_full)
-			#	proven.append(clarify)
-				#year, remarry, str_petition, str_second, total,str_year, str_gender, highlight = process_prove(clarify, write_sheet)
-				#year_list.append(year)
-				#remarried_list.append(remarry)
-				#first_l.append(str_petition)
-				#second_l.append(str_second)
-				#total_child_l.append(total)
-				#child_year_l.append(str_year)
-				#child_gender_l.append(str_gender)
-				#highlight_l.append(highlight)
-
-				#decide whether the defendant agrees or not 
-				opt = re.search(r'不同意([\u4e00-\u9fa5]*)离婚', bei)
-				if opt: 
-					defendant_agree.append('n')
-				elif re.search(r'同意([\u4e00-\u9fa5]*)离婚', bei):
-					defendant_agree.append('y')
-				else: 
-					defendant_agree.append('n/a')
-			else: 
-				print(str(num)+": DID NOT FOUND 被告ARGUMENT")
-				print(rest)
-				yuan=rest
-				plantiff_reasons.append("N/A")
-				defendant_agree.append('n/a')
-				defendant_reasons.append("n/a")
-
-			#经审理@33
-			num = i + 1 
+		if prove:
 			prove_ = second[prove.start():]
 			found = None 
 			found = re.search(r"家庭暴力|家暴|纠纷|打骂|争执|打闹|致伤|损伤|吵闹|矛盾|报警", prove_)
@@ -539,83 +515,59 @@ def process_court2(court2, write_sheet):
 			if evi: 
 				write_sheet.write(num,31, prove_[evi.start():])	
 			else: 
-				#print(str(num)+": "+prove_)
-				#print("test on how many")
-				#print(yuan)
 				sss = re.search(r'下列证据|原告([\u4e00-\u9fa5])*为证明自己的主张|原告([\u4e00-\u9fa5])*(为)*证明', yuan)
 				if sss: 
 					write_sheet.write(num, 31, yuan[sss.start():])
-					#print(str(num)+": "+yuan[sss.start():])
 				else: 
-					#print(str(num)+": "+yuan)
-					#can continue to find this in the beigao section based on the modified keywords 
 					write_sheet.write(num,31,"n/a")
-			#print("PASS INTO A NEW PROVE")
-			year, remarry, str_petition, str_second, total,str_year, str_gender, highlight = process_prove(prove_, write_sheet)
+
+			year, remarry = prove_year_remarry(prove_)
+			str_petition, str_second = prove_petition(prove_) 
+			total,str_year, str_gender = prove_children(prove_)
+			prove_l.append(prove)
 			
-			#if total >= 3: 
-			#	print("ROW NUMER: " + str(i+1))
-			#	print(str(total)+", "+str_year+", "+str_gender)
-			#	print()
-			#	print(prove_)
-			#year_
-			#print(year)
-			write_sheet.write(num,15,int(year))
-			#remarried yes, or not @18 
-			write_sheet.write(num,16,remarry)
-			#first petition @19
-			write_sheet.write(num,17,str_petition)	
-			#second petition @20
-			write_sheet.write(num,18,str_second)
-			#the number of children @21 
-			write_sheet.write(num,19,total)
-			#the age of the children @22
-			write_sheet.write(num,20,str_year)
-			#gender of the children @23
-			write_sheet.write(num,21,str_gender)
-
-		#when there is no parse 		
+		#if there is no proof, find the information from the yuangao reason 
 		else: 
-			print(str(num)+": DID NOT FOUND 庭审证明")
-			plantiff_reasons.append("N/A")
-			print(second)
-		num = num + 1
+			year, remarry = prove_year_remarry(prove_)
+			str_petition, str_second = prove_petition(prove_) 
+			total,str_year, str_gender = prove_children(prove_)
+			prove_l.append("n/a")
 
-	#write both parties 
+		year_l.append(year)
+		remarry_l.append(remarry)
+		str_petition_l.append(str_petition)
+		str_second_l.append(str_second)
+		total_l.append(total)
+		str_year_l.append(str_year)
+		str_gender_l.append(str_gender)
+
+	#outside of each loop 
 	write_sheet.write(0, 14, 'both parties')
 	write_col(both_col, 14, write_sheet)
-	
-	#year married @15
-	write_sheet.write(0,15,"year married")
-	#remarried yes, or not @16 
-	write_sheet.write(0,16,"remarrried")
-	#first petition @19
-	write_sheet.write(0,17,"first petition")	
-	#second petition @20
-	write_sheet.write(0,18,"second petition")
-	#the number of children @21 
-	write_sheet.write(0,19,"num of children")
-	#the age of the children @22
-	write_sheet.write(0,20,"age of children")
-	#gender of the children @23
-	write_sheet.write(0,21,"gender of children")
-
+	write_sheet.write(0,15, "married year")
+	write_col(year_l, 15, write_sheet)
+	write_sheet.write(0,16, "remarried?")
+	write_col(remarry_l, 16, write_sheet)
+	write_sheet.write(0,17,"first time?")
+	write_col(str_petition_l, 17, write_sheet)	
+	write_sheet.write(0,18,"second time?")
+	write_col(str_second_l, 18, write_sheet)
+	write_sheet.write(0,19,"amount of children")
+	write_col(total_l, 19, write_sheet)
+	write_sheet.write(0,20,"birth")
+	write_col(str_year_l, 20, write_sheet)
+	write_sheet.write(0,21,"gender")
+	write_col(str_gender_l, 21, write_sheet)
 	write_sheet.write(0,22, 'plantiff')
-	write_col(plantiff_reasons, 22, write_sheet)	
-
-	#defendant reasons @23
+	write_col(yuan_l, 22, write_sheet)	
 	write_sheet.write(0, 23, "defendant reasons")
-	write_col(defendant_reasons, 23, write_sheet)
-	#defendant agree to divorce @24
+	write_col(bei_l, 23, write_sheet)
 	write_sheet.write(0,24, "defendant agrees")
-	write_col(defendant_agree, 24, write_sheet)
-	
-	#dispute or not @31 
+	write_col(opt_l, 24, write_sheet)
 	write_sheet.write(0,30, "disputed?")
 	write_col(dispute_l, 30, write_sheet)
 
 def write_row(row, rowN, sheet, style1, style2, style3): 
-
 	for i in range(0, len(row)): 
 		found = None 
 		if i == 33: #prove 
@@ -645,23 +597,31 @@ def write_col_gen(col, colN, style, sheet):
 		else: 
 			sheet.write(i+1, colN, col[i])
 
-#案号10 col
-def compareToJufa(start, the_year, jufa, open_, final):
+def compareToJufa(start, the_year, jufa, open_, final, arrange, original):
+	sheets = original.sheets()
+	origin = None 
+	for sheet in sheets: 
+		origin = sheet 
+		if origin: 
+			break 
+	#YELLO 
 	pattern1 = xlwt.Pattern() 
 	pattern1.pattern = xlwt.Pattern.SOLID_PATTERN
-	pattern1.pattern_fore_colour = 5 #this is yello 
+	pattern1.pattern_fore_colour = 5 
 	style1 = xlwt.XFStyle()
 	style1.pattern = pattern1 
 
+	#RED 
 	pattern2 = xlwt.Pattern() 
 	pattern2.pattern = xlwt.Pattern.SOLID_PATTERN
-	pattern2.pattern_fore_colour = xlwt.Style.colour_map['pink'] #red
+	pattern2.pattern_fore_colour = xlwt.Style.colour_map['pink'] 
 	style2 = xlwt.XFStyle()
 	style2.pattern = pattern2
 
+	#BLUE 
 	pattern3 = xlwt.Pattern() 
 	pattern3.pattern = xlwt.Pattern.SOLID_PATTERN
-	pattern3.pattern_fore_colour = xlwt.Style.colour_map['pale_blue']  #blue
+	pattern3.pattern_fore_colour = xlwt.Style.colour_map['pale_blue']  
 	style3 = xlwt.XFStyle()
 	style3.pattern = pattern3
 
@@ -679,31 +639,35 @@ def compareToJufa(start, the_year, jufa, open_, final):
 	open_case = open_.col(3, start_rowx=1, end_rowx=nrows_open)
 	#for each of the case number, find the corresponding one from the new laaws 
 	name_row = open_.row(0)
-	#print(name_row)
 	jufa_v = []
 	open_v = []
 	for i in jufa_case: 
 		jufa_v.append(i.value)
 	for i in open_case: 
 		open_v.append(i.value)
+	#write the title to the final sheet 
 	write_row(name_row, 0, final, style1, style2, style3)
 
 	for i in range(0, len(jufa_case)): 
-		num = i + 1 
+		num=i+1 
 		case = jufa_v[i]
 		if case in open_v:
-			open_yes.append(case)
 			index = open_v.index(case)
-			row = open_.row(index+1)
-			write_row(row, num, final, style1, style2, style3)
-		#not in the openLaws
+			row = open_.row(index+1) 
+			write_row(row,num,final,style1,style2,style3)
+
+			ori_row = origin.row(index+1)
+			write_row(ori_row,num,arrange,style1,style2,style3)
+
+		#not in the openLaws sheet 
 		else: 
-			jufa_not.append(case)	
 			#self add in the information 
 			the_row = jufa.row(num)
 			name = the_row[1].value 
+			court = the_row[6].value 
 			final.write(num,3, case)
 			final.write(num,4, name)
+			final.write(num,2, court)
 
 			#经审理@34, write again 
 			prove = jufa.row(num)[12].value
@@ -721,36 +685,26 @@ def compareToJufa(start, the_year, jufa, open_, final):
 				else: 
 					final.write(num,33, prove)
 
-			#evidences @31上述事实
-		
+			#evidences @31上述事实	
 			if evi: 
 				final.write(num,31, prove[evi.start():])	
 			else: 
 				final.write(num,31,"n/a")
 
-			year, remarry, str_petition, str_second, total,str_year, str_gender, highlight = process_prove(prove, final)
-			#debug 
-
-
-
-			#year married @17
-
-			#print(year)
+			if prove=="": 
+				continue 		
+			year, remarry = prove_year_remarry(prove)
+			str_petition, str_second = prove_petition(prove)
+			total,str_year, str_gender = prove_children(prove)
 			final.write(num,15,int(year))
-			#remarried yes, or not @18 
 			final.write(num,16,remarry)
-			#first petition @19
-			final.write(num,17,str_petition)	
-			#second petition @20
+			final.write(num,17,str_petition)
 			final.write(num,18,str_second)
-			#the number of children @21 
 			final.write(num,19,total)
-			#the age of the children @22
 			final.write(num,20,str_year)
-			#gender of the children @23
 			final.write(num,21,str_gender)
 
-	#result @26
+	#everything in the jufa 
 	result_col = []
 	custody_col = []
 	results = jufa.col(14, start_rowx=1, end_rowx=nrows_jufa)
@@ -760,7 +714,7 @@ def compareToJufa(start, the_year, jufa, open_, final):
 			result_col.append('n')
 			custody_col.append('n/a')
 		else: 
-			yes = re.search(r'准予|准许|原告[\u4e00-\u9fa5]*甲离婚',r.value)
+			yes = re.search(r'准予|准许|原告[\u4e00-\u9fa5]*离婚|某离婚',r.value)
 			if yes: 
 				result_col.append('y')
 				ss = re.split("。|；", r.value)
@@ -773,19 +727,14 @@ def compareToJufa(start, the_year, jufa, open_, final):
 						break
 				if here: 
 					custody_col.append('n/a')
-
 			else: 
-				if re.search(r'某离婚|杨某甲离婚', r.value): 
-					result_col.append('y')
-				else:
-					print("This is about ruling: " + r.value)
-					result_col.append('n/a')
+				print("This is about RULING: " + r.value)
+				result_col.append('n/a')
 				custody_col.append('n/a')
 
 	#本院认为，@27 
 	opin_col = []
 	comment_col = []
-
 	opinion = jufa.col(13, start_rowx=1, end_rowx=nrows_jufa)
 	for o in opinion: 
 		opin_col.append(o.value)
@@ -794,77 +743,58 @@ def compareToJufa(start, the_year, jufa, open_, final):
 		sent = re.split("。", value)
 		comment = "n/a" 
 		for s in sent:
-			#zheng = re.search("证据", s)
-			jiabao = re.search("家庭暴力|家暴|打", s)
+			jiabao = re.search("家庭暴力|家暴|打|证据", s)
 			if jiabao:
 				comment = s + "。"
-
-		#print(comment)
 		comment_col.append(comment)	
 
-	#divorce? @25
+	write_same(int(the_year), 1, nrows_jufa, final)
 	final.write(0, 25, "divorce?")
 	write_col_gen(result_col, 25, style2, final)
 	final.write(0, 26, "opinion?")
 	write_col_gen(opin_col, 26, style3, final)
 	final.write(0, 27, "custody")
 	write_col(custody_col, 27, final)
-	#35
-	final.write(0, 35, "court comments?")
-	#write_col(comment_col, 35, final)	
-	#the one after is the custody @28 
-	#was mentioned? @28 
 	final.write(0, 28, "was mentioned?")
 	write_same("y", 28, nrows_jufa, final)
-	#who @30 
 	final.write(0, 29, "who was accused?")
 	write_same("defendant", 29, nrows_jufa, final)
-	#@1, year 
-	write_same(int(the_year), 1, nrows_jufa, final)
-	
-	#evidences @32上述事实
 	final.write(0, 31, "evidences?")
-	#did the one for the court @33 
 	final.write(0, 32, "court looks into?")
 	write_same("n", 32, nrows_jufa, final)
-
-	#经审理@33
 	final.write(0, 33, "经审理")
+	final.write(0, 34, "court comments?")
+	write_col(comment_col, 34, final)
 
-	#court comments, @35
-	final.write(0, 35, "court comments?")
-	write_col(comment_col, 35, final)
-	#final.write_same(")
-
+	#the rows of the number 
 	for i in range(0, nrows_jufa): 
 		final.write(i+1, 0, int(start))
 		start = start + 1 
-
-	open_not = list(set(open_v)-set(open_yes))
-	return jufa_not, open_not 
 
 if __name__ == '__main__':
 	write_to = xlwt.Workbook() 
 	write_sheet = write_to.add_sheet(u'sheet1', cell_overwrite_ok=True)
 	
 	#get the targeted file
-	target = xlrd.open_workbook("../openlaws/2014巫山open.xlsx")
+	target = xlrd.open_workbook("../../Downloads/2015open.xlsx")
 	
 	read_(target, write_sheet) 
-	write_to.save("../2014巫山after.xls")	
-	
-	target1 = xlrd.open_workbook("../2014巫山after.xls")
+	beforeCom = "../2015哈尔滨after.xls"
+	write_to.save(beforeCom)	
+	target1 = xlrd.open_workbook(beforeCom)
 	open_sheet = target1.sheets()[0]
+	
 	final = xlwt.Workbook()
-	final_sheet = final.add_sheet(u'2014巫山', cell_overwrite_ok=True)
-
-	#adjust to the Jufa cases 
-	jufa = xlrd.open_workbook("../../Downloads/2014巫山.xlsx")
+	final_sheet = final.add_sheet(u'processed', cell_overwrite_ok=True)
+	arrange = xlwt.Workbook()
+	arrange_sheet = arrange.add_sheet(u'open', cell_overwrite_ok=True)
+	
+	jufa = xlrd.open_workbook("../../Downloads/2015哈尔滨.xlsx")
 	jufa_sheet = jufa.sheets()[0] 
 
-	year = 2014
-	start = 747
-	jufa_not, open_not = compareToJufa(start, year, jufa_sheet, open_sheet, final_sheet)
+	year = 2015
+	start = 1
+	compareToJufa(start, year, jufa_sheet, open_sheet, final_sheet,arrange_sheet,target)
 
-	final.save("../2014巫山comp.xls")	
-
+	final.save("../2015哈尔滨comp.xls")	
+	arrange.save("../arrangeOpen.xls")
