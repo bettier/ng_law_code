@@ -90,7 +90,8 @@ def process_danshiren(dangshiren, write_sheet):
 		two = str_.split('被告')
 		if len(two) < 2: 	
 			print("DID NOT FOUND 被告 in DANGSHIREN!!!!")
-			
+			#print(str_)
+			continue 
 		yuanGao = two[0]
 		beiGao = '被告' + two[1]
 		
@@ -776,10 +777,10 @@ if __name__ == '__main__':
 	write_sheet = write_to.add_sheet(u'sheet1', cell_overwrite_ok=True)
 	
 	#get the targeted file
-	target = xlrd.open_workbook("../../Downloads/2015open.xlsx")
+	target = xlrd.open_workbook("../../Downloads/open广州.xlsx")
 	
 	read_(target, write_sheet) 
-	beforeCom = "../2015哈尔滨after.xls"
+	beforeCom = "../2014广州after.xls"
 	write_to.save(beforeCom)	
 	target1 = xlrd.open_workbook(beforeCom)
 	open_sheet = target1.sheets()[0]
@@ -789,12 +790,12 @@ if __name__ == '__main__':
 	arrange = xlwt.Workbook()
 	arrange_sheet = arrange.add_sheet(u'open', cell_overwrite_ok=True)
 	
-	jufa = xlrd.open_workbook("../../Downloads/2015哈尔滨.xlsx")
+	jufa = xlrd.open_workbook("../../Downloads/jufa广州2014.xlsx")
 	jufa_sheet = jufa.sheets()[0] 
 
 	year = 2015
 	start = 1
 	compareToJufa(start, year, jufa_sheet, open_sheet, final_sheet,arrange_sheet,target)
 
-	final.save("../2015哈尔滨comp.xls")	
+	final.save("../2014广州comp.xls")	
 	arrange.save("../arrangeOpen.xls")

@@ -27,7 +27,7 @@ def winning(sheets):
 			ncols = sheet.ncols
 			nrows = sheet.nrows
 
-			win = sheet.col_values(25, start_rowx=1, end_rowx=nrows)
+			win = sheet.col_values(26, start_rowx=1, end_rowx=nrows)
 			count = 1 
 			for i in win: 
 				if i == "y": 
@@ -68,7 +68,7 @@ def defendantOpin(sheets):
 			nrows = sheet.nrows
 
 			opinion = sheet.col_values(24, start_rowx=1, end_rowx=nrows)
-			rule = sheet.col_values(25, start_rowx=1, end_rowx=nrows)
+			rule = sheet.col_values(26, start_rowx=1, end_rowx=nrows)
 
 			for i in range(0, len(opinion)): 
 				
@@ -116,7 +116,7 @@ def petitionInflu(sheets):
 
 			first = sheet.col_values(17, start_rowx=1, end_rowx=nrows)
 			second = sheet.col_values(18, start_rowx=1, end_rowx=nrows)
-			rule = sheet.col_values(25, start_rowx=1, end_rowx=nrows)
+			rule = sheet.col_values(26, start_rowx=1, end_rowx=nrows)
 			if len(first) != len(second): 
 				print("DANGER!")
 			if len(first) != len(rule): 
@@ -166,6 +166,25 @@ def legalPlantiff(sheets):
 	print("7.",percent_y,"% of cases alleging DV in which plaintiff was legally represented")
 	return total 
 
+def separation(sheets):
+	v = 0
+	total = 0
+	for out in sheets: 
+		for sheet in out: 
+			ncols = sheet.ncols
+			nrows = sheet.nrows
+
+			pp = sheet.col_values(25, start_rowx=1, end_rowx=nrows)
+			for p in pp: 
+				if p == "y": 
+					v = v + 1 
+					total = total + 1
+				elif p != "": 
+					total = total + 1
+	percent_y = round((v/total)*100,2)
+	print("!!!!!!!!!!!!!!!", percent_y)
+
+
 def hospitalVisit(sheets): 
 	#evidence @31 
 	#plantiff reasons @22 
@@ -176,8 +195,8 @@ def hospitalVisit(sheets):
 			ncols = sheet.ncols
 			nrows = sheet.nrows
 
-			evidence = sheet.col_values(31, start_rowx=1, end_rowx=nrows)
-			reasons = sheet.col_values(26, start_rowx=1, end_rowx=nrows)
+			evidence = sheet.col_values(32, start_rowx=1, end_rowx=nrows)
+			reasons = sheet.col_values(27, start_rowx=1, end_rowx=nrows)
 			for i in range(0, len(evidence)): 
 				num0 = evidence[i].find("医院")
 				num1 = evidence[i].find("病历")
@@ -205,7 +224,7 @@ def deniedDV(sheets):
 			ncols = sheet.ncols
 			nrows = sheet.nrows
 
-			denial = sheet.col_values(30, start_rowx=1, end_rowx=nrows)
+			denial = sheet.col_values(31, start_rowx=1, end_rowx=nrows)
 			count = 0
 			for d in denial:
 				count = count + 1 
@@ -232,7 +251,7 @@ if __name__ == '__main__':
 	filename1 = "1.1 广州市all case.xlsx"
 	filename2 = "3.2 重庆市case#0694-1116.xlsx"
 	filename3 = "3.3 重庆市case#1117-1474.xlsx"
-	str_data1 = "../"+filename1
+	str_data1 = "../../Downloads/"+filename1
 	str_data2 = "../"+filename2
 	str_data3 = "../"+filename3
 
@@ -247,11 +266,12 @@ if __name__ == '__main__':
 	sheets = [sheets1]
 
 	num1 = winning(sheets)
-	#num2 = defendantOpin(sheets)
+	num2 = defendantOpin(sheets)
 	num3 = petitionInflu(sheets)
 	num4 = legalPlantiff(sheets)
 	num5 = hospitalVisit(sheets)
 	num6 = deniedDV(sheets)
+	separation(sheets)
 	print(num1,num3,num4,num5,num6)
 '''
 	beforeCom = "../2014哈尔滨.xls"
